@@ -16,6 +16,7 @@ def extract_date_from_pdf(input_pdf: str) -> datetime.date:
     Returns:
         Date found in file
     """
+    input_pdf = os.path.expanduser(input_pdf)
     if not os.path.exists(input_pdf):
         raise FileNotFoundError('Not a valid file: {}'.format(input_pdf))
     process_err = subprocess.call(['pdftotext', input_pdf])
@@ -60,7 +61,7 @@ def extract_date_from_string(input_str: str) -> datetime.date:
         If multiple dates are found, returns the oldest date
     """
     months = ['january', 'february', 'march', 'april', 'may', 'june',
-              'july', 'august', 'september', 'november' 'december']
+              'july', 'august', 'september', 'october', 'november' 'december']
     months_rex_strs = []
     for month in months:
         month_rex_str = r''
@@ -75,9 +76,14 @@ def extract_date_from_string(input_str: str) -> datetime.date:
     date_patterns.append(('MDY', r'((?<!\d)\d\d?)(-|/)((?<!\d)\d\d?)(-|/)(\d\d\d\d|\d\d)'))
     # Format: yyyy/mm/dd with / or -
     date_patterns.append(('YMD', r'(\d\d\d\d)(-|/)((?<!\d)\d\d?)(-|/)((?<!\d)\d\d?)'))
-    # MMM dd, yyyy
+    # Format: MMM dd, yyyy
     date_patterns.append(('MDY',
-                          r'(' + r'|'.join(months_rex_strs) + r').*?(\d\d?).+?(\d\d\d\d|\d\d)'))
+                          r'(' + r'|'.join(months_rex_strs) + \
+                          r")[\D|^,]*?(\d\d?)[,|\s|1|']+?(\d\d\d\d|\d\d)"))
+    # Format: dd MMM, yyyy
+    date_patterns.append(('DMY',
+                          r'(\d\d?)\s*(' + \
+                          r'|'.join(months_rex_strs) + r')[,|\s]+?(\d\d\d\d|\d\d)'))
 
     dates_found = []
     for order, date_regex_str in date_patterns:
